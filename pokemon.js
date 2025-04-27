@@ -72,7 +72,7 @@ function displayPokemons(pokemons) {
     card.className = "list-item";
     card.innerHTML = `
       <div class="number-wrap">
-        <p class="caption-fonts">#${String(pokemon.id).padStart(3, '0')}</p>
+        <p class="caption-fonts"></p>
       </div>
       <div class="img-wrap">
         <img src="https://raw.githubusercontent.com/pokeapi/sprites/master/sprites/pokemon/other/dream-world/${pokemon.id}.svg" alt="${pokemon.name}">

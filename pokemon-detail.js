@@ -1,10 +1,13 @@
 let currentPokemonId = null;
+let allPokemonIds = [];
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const pokemonID = new URLSearchParams(window.location.search).get("id");
   const id = parseInt(pokemonID, 10);
 
-  if (!id || id < 1) {
+  allPokemonIds = await fetchAllPokemonIds(); // Get all ids first
+
+  if (!allPokemonIds.includes(id)) {
     return (window.location.href = "./pokedex.html");
   }
 
@@ -12,11 +15,36 @@ document.addEventListener("DOMContentLoaded", () => {
   loadPokemon(id);
 });
 
+async function fetchAllPokemonIds() {
+  const generations = [1, 2, 3];
+  let ids = [];
+
+  try {
+    const promises = generations.map(gen =>
+      fetch(`https://pokeapi.co/api/v2/generation/${gen}`).then(res => res.json())
+    );
+    const results = await Promise.all(promises);
+
+    results.forEach(data => {
+      data.pokemon_species.forEach(pokemon => {
+        const id = parseInt(pokemon.url.split("/").filter(Boolean).pop());
+        ids.push(id);
+      });
+    });
+
+    ids.sort((a, b) => a - b);
+    return ids;
+  } catch (error) {
+    console.error("Error fetching all Pokémon ids:", error);
+    return [];
+  }
+}
+
 async function loadPokemon(id) {
   try {
     const [pokemon, pokemonSpecies] = await Promise.all([
-      fetch(`https://pokeapi.co/api/v2/pokemon/${id}`).then((res) => res.json()),
-      fetch(`https://pokeapi.co/api/v2/pokemon-species/${id}`).then((res) => res.json()),
+      fetch(`https://pokeapi.co/api/v2/pokemon/${id}`).then(res => res.json()),
+      fetch(`https://pokeapi.co/api/v2/pokemon-species/${id}`).then(res => res.json()),
     ]);
 
     const abilitiesWrapper = document.querySelector(".pokemon-detail-wrap .pokemon-detail.move");
@@ -27,26 +55,12 @@ async function loadPokemon(id) {
       const flavorText = getEnglishFlavorText(pokemonSpecies);
       document.querySelector(".body3-fonts.pokemon-description").textContent = flavorText;
 
-      const [leftArrow, rightArrow] = ["#leftArrow", "#rightArrow"].map((sel) =>
-        document.querySelector(sel)
-      );
+      setupNavigation(id);
 
-      // Remove previous listeners and add new ones dynamically
-      leftArrow.removeEventListener("click", navigatePokemon);
-      rightArrow.removeEventListener("click", navigatePokemon);
-
-      // Check for generation to decide max number for the navigation
-      const maxPokemonId = getMaxPokemonIdByGeneration(id);
-      
-      if (id > 1) {
-        leftArrow.addEventListener("click", () => {
-          navigatePokemon(id - 1);
-        });
-      }
-      if (id < maxPokemonId) {
-        rightArrow.addEventListener("click", () => {
-          navigatePokemon(id + 1);
-        });
+      if (pokemon.name.toLowerCase() === "blastoise") {
+        playBlastoiseMusic();
+      } else {
+        stopBlastoiseMusic();
       }
 
       window.history.pushState({}, "", `./detail.html?id=${id}`);
@@ -54,8 +68,32 @@ async function loadPokemon(id) {
 
     return true;
   } catch (error) {
-    console.error("An error occurred while fetching Pokemon data:", error);
+    console.error("An error occurred while fetching Pokémon data:", error);
     return false;
+  }
+}
+
+function setupNavigation(id) {
+  const leftArrow = document.querySelector("#leftArrow");
+  const rightArrow = document.querySelector("#rightArrow");
+
+  leftArrow.onclick = null;
+  rightArrow.onclick = null;
+
+  const currentIndex = allPokemonIds.indexOf(id);
+
+  if (currentIndex > 0) {
+    leftArrow.addEventListener("click", (e) => {
+      e.preventDefault();
+      navigatePokemon(allPokemonIds[currentIndex - 1]);
+    });
+  }
+
+  if (currentIndex < allPokemonIds.length - 1) {
+    rightArrow.addEventListener("click", (e) => {
+      e.preventDefault();
+      navigatePokemon(allPokemonIds[currentIndex + 1]);
+    });
   }
 }
 
@@ -64,26 +102,36 @@ async function navigatePokemon(id) {
   await loadPokemon(id);
 }
 
-// Define max Pokemon ID based on the generation
-function getMaxPokemonIdByGeneration(id) {
-  if (id <= 151) {
-    return 151;  // Gen 1
-  } else if (id <= 251) {
-    return 251;  // Gen 2
-  } else if (id <= 386) {
-    return 386;  // Gen 3
-  } else if (id <= 493) {
-    return 493;  // Gen 4
-  } else if (id <= 649) {
-    return 649;  // Gen 5
-  } else if (id <= 721) {
-    return 721;  // Gen 6
-  } else if (id <= 809) {
-    return 809;  // Gen 7
-  } else if (id <= 898) {
-    return 898;  // Gen 8
-  } else {
-    return id;  // For Gen 9 and beyond (if applicable)
+function playBlastoiseMusic() {
+  let existingAudio = document.getElementById("blastoise-audio");
+  if (existingAudio) {
+    existingAudio.play();
+    return;
+  }
+
+  const audio = document.createElement("audio");
+  audio.src = "./assets/Blastoise.mp3";
+  audio.id = "blastoise-audio";
+  audio.loop = true;
+  document.body.appendChild(audio);
+
+  const tryPlay = () => {
+    audio.play().catch(() => {
+      console.warn("User interaction needed to play audio.");
+    });
+    document.removeEventListener("click", tryPlay);
+    document.removeEventListener("touchstart", tryPlay);
+  };
+
+  document.addEventListener("click", tryPlay);
+  document.addEventListener("touchstart", tryPlay);
+}
+
+function stopBlastoiseMusic() {
+  const existingAudio = document.getElementById("blastoise-audio");
+  if (existingAudio) {
+    existingAudio.pause();
+    existingAudio.remove();
   }
 }
 
@@ -155,12 +203,12 @@ function setTypeBackgroundColor(pokemon) {
 
   const rgbaColor = rgbaFromHex(color);
   const styleTag = document.createElement("style");
-  styleTag.innerHTML = ` 
+  styleTag.innerHTML = `
     .stats-wrap .progress-bar::-webkit-progress-bar {
-      background-color: rgba(${rgbaColor}, 0.5);
+        background-color: rgba(${rgbaColor}, 0.5);
     }
     .stats-wrap .progress-bar::-webkit-progress-value {
-      background-color: ${color};
+        background-color: ${color};
     }
   `;
   document.head.appendChild(styleTag);
@@ -186,14 +234,12 @@ function displayPokemonDetails(pokemon) {
   document.querySelector("title").textContent = capitalizePokemonName;
 
   const detailMainElement = document.querySelector(".detail-main");
+  detailMainElement.className = "detail-main main"; // reset classes
   detailMainElement.classList.add(name.toLowerCase());
 
-  document.querySelector(".name-wrap .name").textContent =
-    capitalizePokemonName;
+  document.querySelector(".name-wrap .name").textContent = capitalizePokemonName;
 
-  document.querySelector(
-    ".pokemon-id-wrap .body2-fonts"
-  ).textContent = `#${String(id).padStart(3, "0")}`;
+  document.querySelector(".pokemon-id-wrap .body2-fonts").textContent = `#${String(id).padStart(3, "0")}`;
 
   const imageElement = document.querySelector(".detail-img-wrapper img");
   imageElement.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/${id}.svg`;
@@ -208,16 +254,10 @@ function displayPokemonDetails(pokemon) {
     });
   });
 
-  document.querySelector(
-    ".pokemon-detail-wrap .pokemon-detail p.body3-fonts.weight"
-  ).textContent = `${weight / 10}kg`;
-  document.querySelector(
-    ".pokemon-detail-wrap .pokemon-detail p.body3-fonts.height"
-  ).textContent = `${height / 10}m`;
+  document.querySelector(".pokemon-detail-wrap .pokemon-detail p.body3-fonts.weight").textContent = `${weight / 10}kg`;
+  document.querySelector(".pokemon-detail-wrap .pokemon-detail p.body3-fonts.height").textContent = `${height / 10}m`;
 
-  const abilitiesWrapper = document.querySelector(
-    ".pokemon-detail-wrap .pokemon-detail.move"
-  );
+  const abilitiesWrapper = document.querySelector(".pokemon-detail-wrap .pokemon-detail.move");
   abilities.forEach(({ ability }) => {
     createAndAppendElement(abilitiesWrapper, "p", {
       className: "body3-fonts",
@@ -265,8 +305,7 @@ function displayPokemonDetails(pokemon) {
 function getEnglishFlavorText(pokemonSpecies) {
   for (let entry of pokemonSpecies.flavor_text_entries) {
     if (entry.language.name === "en") {
-      let flavor = entry.flavor_text.replace(/\f/g, " ");
-      return flavor;
+      return entry.flavor_text.replace(/\f/g, " ");
     }
   }
   return "";
