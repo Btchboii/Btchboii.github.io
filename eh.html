@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokeball Case</title>
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <div class="pokeball-case">
+        <!-- Background image of the Pokeball Case -->
+        <img src="./assets/pokeball-case.png" alt="Pokeball Case" class="pokeball-case-img">
+        
+        <!-- Container for the Pokeballs (Horizontal Layout) -->
+        <div class="pokeball-container">
+            <!-- Generation 1 -->
+            <div class="gen gen-1">
+                <img src="./assets/pokeball-selection.svg" alt="pokeball" class="pokeball-incase">
+                <h2>Gen 1</h2>
+            </div>
+
+            <!-- Generation 2 -->
+            <div class="gen gen-2">
+                <img src="./assets/pokeball-selection.svg" alt="pokeball" class="pokeball-incase">
+                <h2>Gen 2</h2>
+            </div>
+
+            <!-- Generation 3 -->
+            <div class="gen gen-3">
+                <img src="./assets/pokeball-selection.svg" alt="pokeball" class="pokeball-incase">
+                <h2>Gen 3</h2>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const genItems = document.querySelectorAll('.gen');    
+        genItems.forEach((genItem) => {
+            genItem.addEventListener('click', () => {
+                const genNumber = genItem.classList[1].split('-')[1];
+                window.location.href = `pokedex.html?gen=${genNumber}`;
+            });
+        });
+    </script>
+</body>
+</html>

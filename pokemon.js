@@ -1,8 +1,9 @@
-const listWrapper      = document.querySelector(".list-wrapper");
+const listWrapper = document.querySelector(".list-wrapper");
 const generationFilter = document.querySelector("#generation-filter");
-const searchInput      = document.querySelector("#search-input");
-const closeIcon        = document.querySelector("#search-close-icon");
-const notFoundMessage  = document.querySelector("#not-found-message");
+const searchInput = document.querySelector("#search-input");
+const closeIcon = document.querySelector("#search-close-icon");
+const notFoundMessage = document.querySelector("#not-found-message");
+const loadingScreen = document.querySelector("#loading-screen");
 
 let allPokemons = [];
 
@@ -13,7 +14,7 @@ async function fetchPokemonsByGeneration(gen) {
       const gens = await Promise.all([
         fetch("https://pokeapi.co/api/v2/generation/1").then(res => res.json()),
         fetch("https://pokeapi.co/api/v2/generation/2").then(res => res.json()),
-        fetch("https://pokeapi.co/api/v2/generation/3").then(res => res.json()),
+        fetch("https://pokeapi.co/api/v2/generation/3").then(res => res.json())
       ]);
       return [...gens[0].pokemon_species, ...gens[1].pokemon_species, ...gens[2].pokemon_species];
     } else {
@@ -27,42 +28,71 @@ async function fetchPokemonsByGeneration(gen) {
   }
 }
 
+// Show the loading screen
+function showLoadingScreen() {
+  loadingScreen.style.visibility = 'visible';
+}
+
+// Hide the loading screen
+function hideLoadingScreen() {
+  loadingScreen.style.visibility = 'hidden';
+}
+
 // Load and display Pokémon
 async function loadPokemons() {
+  showLoadingScreen(); // Show the loading screen
+
   const speciesList = await fetchPokemonsByGeneration(generationFilter.value);
   allPokemons = speciesList.map(pokemon => {
-    const id = pokemon.url.split("/").filter(Boolean).pop();
+    const id = pokemon.url.split("/").filter(Boolean).pop(); // Extract the ID from the URL
     return { 
       name: pokemon.name, 
-      url: `https://pokeapi.co/api/v2/pokemon/${id}/`
+      id: id
     };
   }).sort((a, b) => a.name.localeCompare(b.name));
-  
+
   displayPokemons(allPokemons);
+
+  hideLoadingScreen(); // Hide the loading screen once the Pokémon data is loaded
 }
 
 // Render Pokémon cards
 function displayPokemons(pokemons) {
-  listWrapper.innerHTML = "";
+  listWrapper.innerHTML = "";  // Clear the list before rendering new ones
+
+  if (pokemons.length === 0) {
+    notFoundMessage.style.display = "block";
+    return;
+  }
+
+  notFoundMessage.style.display = "none";  // Hide the not found message
 
   pokemons.forEach(pokemon => {
-    const id = pokemon.url.split("/").filter(Boolean).pop();
     const card = document.createElement("div");
     card.className = "list-item";
     card.innerHTML = `
       <div class="number-wrap">
-        <p class="caption-fonts"></p>
+        <p class="caption-fonts">#${String(pokemon.id).padStart(3, '0')}</p>
       </div>
       <div class="img-wrap">
-        <img src="https://raw.githubusercontent.com/pokeapi/sprites/master/sprites/pokemon/other/dream-world/${id}.svg" alt="${pokemon.name}">
+        <img src="https://raw.githubusercontent.com/pokeapi/sprites/master/sprites/pokemon/other/dream-world/${pokemon.id}.svg" alt="${pokemon.name}">
       </div>
       <div class="name-wrap">
         <p class="body3-fonts">${pokemon.name}</p>
       </div>
     `;
+
+    // Debugging: Check the ID and URL for correctness
+    console.log(`Pokemon Name: ${pokemon.name}, ID: ${pokemon.id}`);
+    
+    // Add click event for redirection to the detail page
     card.addEventListener("click", () => {
-      window.location.href = `./detail.html?id=${id}`;
+      // Log the ID to ensure it’s correct
+      console.log(`Redirecting to details page for Pokémon ID: ${pokemon.id}`);
+      window.location.href = `./detail.html?id=${pokemon.id}`;
     });
+    
+
     listWrapper.appendChild(card);
   });
 }
@@ -74,30 +104,20 @@ function filterByName() {
     pokemon.name.toLowerCase().startsWith(keyword)
   );
 
-  if (filtered.length === 0) {
-    notFoundMessage.style.display = "block";
-  } else {
-    notFoundMessage.style.display = "none";
-  }
-
   displayPokemons(filtered);
+  notFoundMessage.style.display = filtered.length === 0 ? "block" : "none"; // Show/hide "not found" message based on results
 }
 
 // Event listeners
 generationFilter.addEventListener("change", async () => {
   searchInput.value = "";
   closeIcon.classList.remove("search-close-icon-visible");
-  notFoundMessage.style.display = "none";
   await loadPokemons();
 });
 
 searchInput.addEventListener("input", () => {
   filterByName();
-  if (searchInput.value) {
-    closeIcon.classList.add("search-close-icon-visible");
-  } else {
-    closeIcon.classList.remove("search-close-icon-visible");
-  }
+  closeIcon.classList.toggle("search-close-icon-visible", searchInput.value !== "");
 });
 
 closeIcon.addEventListener("click", () => {

@@ -1,10 +1,11 @@
 let currentPokemonId = null;
 
 document.addEventListener("DOMContentLoaded", () => {
-  const MAX_POKEMONS = 151;
+  const MAX_POKEMONS = 898; // Update to match all Pokémon
   const pokemonID = new URLSearchParams(window.location.search).get("id");
   const id = parseInt(pokemonID, 10);
 
+  // Validate if the ID is within the valid range (1-898)
   if (id < 1 || id > MAX_POKEMONS) {
     return (window.location.href = "./pokedex.html");
   }
@@ -16,28 +17,27 @@ document.addEventListener("DOMContentLoaded", () => {
 async function loadPokemon(id) {
   try {
     const [pokemon, pokemonSpecies] = await Promise.all([
-      fetch(`https://pokeapi.co/api/v2/pokemon/${id}`).then((res) =>
-        res.json()
-      ),
-      fetch(`https://pokeapi.co/api/v2/pokemon-species/${id}`).then((res) =>
-        res.json()
-      ),
+      fetch(`https://pokeapi.co/api/v2/pokemon/${id}`).then((res) => res.json()),
+      fetch(`https://pokeapi.co/api/v2/pokemon-species/${id}`).then((res) => res.json()),
     ]);
 
-    const abilitiesWrapper = document.querySelector(
-      ".pokemon-detail-wrap .pokemon-detail.move"
-    );
+    // Check if data is valid
+    if (!pokemon || !pokemonSpecies) {
+      console.error("Error: Pokémon or species data is missing.");
+      window.location.href = './pokedex.html'; // Redirect if there's an error
+      return;
+    }
+
+    const abilitiesWrapper = document.querySelector(".pokemon-detail-wrap .pokemon-detail.move");
     abilitiesWrapper.innerHTML = "";
 
     if (currentPokemonId === id) {
       displayPokemonDetails(pokemon);
       const flavorText = getEnglishFlavorText(pokemonSpecies);
-      document.querySelector(".body3-fonts.pokemon-description").textContent =
-        flavorText;
+      document.querySelector(".body3-fonts.pokemon-description").textContent = flavorText;
 
-      const [leftArrow, rightArrow] = ["#leftArrow", "#rightArrow"].map((sel) =>
-        document.querySelector(sel)
-      );
+      const [leftArrow, rightArrow] = ["#leftArrow", "#rightArrow"].map((sel) => document.querySelector(sel));
+      
       leftArrow.removeEventListener("click", navigatePokemon);
       rightArrow.removeEventListener("click", navigatePokemon);
 
@@ -46,7 +46,7 @@ async function loadPokemon(id) {
           navigatePokemon(id - 1);
         });
       }
-      if (id !== 151) {
+      if (id !== MAX_POKEMONS) { // Adjust for all Pokémon
         rightArrow.addEventListener("click", () => {
           navigatePokemon(id + 1);
         });
@@ -57,7 +57,7 @@ async function loadPokemon(id) {
 
     return true;
   } catch (error) {
-    console.error("An error occured while fetching Pokemon data:", error);
+    console.error("An error occurred while fetching Pokemon data:", error);
     return false;
   }
 }
@@ -85,7 +85,7 @@ const typeColors = {
   dragon: "#7038F8",
   dark: "#705848",
   steel: "#B8B8D0",
-  dark: "#EE99AC",
+  fairy: "#EE99AC", // Fixed color name for Fairy type
 };
 
 function setElementStyles(elements, cssProperty, value) {
@@ -115,23 +115,11 @@ function setTypeBackgroundColor(pokemon) {
   setElementStyles([detailMainElement], "backgroundColor", color);
   setElementStyles([detailMainElement], "borderColor", color);
 
-  setElementStyles(
-    document.querySelectorAll(".power-wrapper > p"),
-    "backgroundColor",
-    color
-  );
+  setElementStyles(document.querySelectorAll(".power-wrapper > p"), "backgroundColor", color);
 
-  setElementStyles(
-    document.querySelectorAll(".stats-wrap p.stats"),
-    "color",
-    color
-  );
+  setElementStyles(document.querySelectorAll(".stats-wrap p.stats"), "color", color);
 
-  setElementStyles(
-    document.querySelectorAll(".stats-wrap .progress-bar"),
-    "color",
-    color
-  );
+  setElementStyles(document.querySelectorAll(".stats-wrap .progress-bar"), "color", color);
 
   const rgbaColor = rgbaFromHex(color);
   const styleTag = document.createElement("style");
@@ -168,12 +156,9 @@ function displayPokemonDetails(pokemon) {
   const detailMainElement = document.querySelector(".detail-main");
   detailMainElement.classList.add(name.toLowerCase());
 
-  document.querySelector(".name-wrap .name").textContent =
-    capitalizePokemonName;
+  document.querySelector(".name-wrap .name").textContent = capitalizePokemonName;
 
-  document.querySelector(
-    ".pokemon-id-wrap .body2-fonts"
-  ).textContent = `#${String(id).padStart(3, "0")}`;
+  document.querySelector(".pokemon-id-wrap .body2-fonts").textContent = `#${String(id).padStart(3, "0")}`;
 
   const imageElement = document.querySelector(".detail-img-wrapper img");
   imageElement.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/${id}.svg`;
@@ -188,16 +173,10 @@ function displayPokemonDetails(pokemon) {
     });
   });
 
-  document.querySelector(
-    ".pokemon-detail-wrap .pokemon-detail p.body3-fonts.weight"
-  ).textContent = `${weight / 10}kg`;
-  document.querySelector(
-    ".pokemon-detail-wrap .pokemon-detail p.body3-fonts.height"
-  ).textContent = `${height / 10}m`;
+  document.querySelector(".pokemon-detail-wrap .pokemon-detail p.body3-fonts.weight").textContent = `${weight / 10}kg`;
+  document.querySelector(".pokemon-detail-wrap .pokemon-detail p.body3-fonts.height").textContent = `${height / 10}m`;
 
-  const abilitiesWrapper = document.querySelector(
-    ".pokemon-detail-wrap .pokemon-detail.move"
-  );
+  const abilitiesWrapper = document.querySelector(".pokemon-detail-wrap .pokemon-detail.move");
   abilities.forEach(({ ability }) => {
     createAndAppendElement(abilitiesWrapper, "p", {
       className: "body3-fonts",
