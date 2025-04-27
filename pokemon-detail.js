@@ -1,12 +1,10 @@
 let currentPokemonId = null;
 
 document.addEventListener("DOMContentLoaded", () => {
-  const MAX_POKEMONS = 898; // Update to match all Pokémon
   const pokemonID = new URLSearchParams(window.location.search).get("id");
   const id = parseInt(pokemonID, 10);
 
-  // Validate if the ID is within the valid range (1-898)
-  if (id < 1 || id > MAX_POKEMONS) {
+  if (!id || id < 1) {
     return (window.location.href = "./pokedex.html");
   }
 
@@ -21,13 +19,6 @@ async function loadPokemon(id) {
       fetch(`https://pokeapi.co/api/v2/pokemon-species/${id}`).then((res) => res.json()),
     ]);
 
-    // Check if data is valid
-    if (!pokemon || !pokemonSpecies) {
-      console.error("Error: Pokémon or species data is missing.");
-      window.location.href = './pokedex.html'; // Redirect if there's an error
-      return;
-    }
-
     const abilitiesWrapper = document.querySelector(".pokemon-detail-wrap .pokemon-detail.move");
     abilitiesWrapper.innerHTML = "";
 
@@ -36,17 +27,23 @@ async function loadPokemon(id) {
       const flavorText = getEnglishFlavorText(pokemonSpecies);
       document.querySelector(".body3-fonts.pokemon-description").textContent = flavorText;
 
-      const [leftArrow, rightArrow] = ["#leftArrow", "#rightArrow"].map((sel) => document.querySelector(sel));
-      
+      const [leftArrow, rightArrow] = ["#leftArrow", "#rightArrow"].map((sel) =>
+        document.querySelector(sel)
+      );
+
+      // Remove previous listeners and add new ones dynamically
       leftArrow.removeEventListener("click", navigatePokemon);
       rightArrow.removeEventListener("click", navigatePokemon);
 
-      if (id !== 1) {
+      // Check for generation to decide max number for the navigation
+      const maxPokemonId = getMaxPokemonIdByGeneration(id);
+      
+      if (id > 1) {
         leftArrow.addEventListener("click", () => {
           navigatePokemon(id - 1);
         });
       }
-      if (id !== MAX_POKEMONS) { // Adjust for all Pokémon
+      if (id < maxPokemonId) {
         rightArrow.addEventListener("click", () => {
           navigatePokemon(id + 1);
         });
@@ -67,6 +64,29 @@ async function navigatePokemon(id) {
   await loadPokemon(id);
 }
 
+// Define max Pokemon ID based on the generation
+function getMaxPokemonIdByGeneration(id) {
+  if (id <= 151) {
+    return 151;  // Gen 1
+  } else if (id <= 251) {
+    return 251;  // Gen 2
+  } else if (id <= 386) {
+    return 386;  // Gen 3
+  } else if (id <= 493) {
+    return 493;  // Gen 4
+  } else if (id <= 649) {
+    return 649;  // Gen 5
+  } else if (id <= 721) {
+    return 721;  // Gen 6
+  } else if (id <= 809) {
+    return 809;  // Gen 7
+  } else if (id <= 898) {
+    return 898;  // Gen 8
+  } else {
+    return id;  // For Gen 9 and beyond (if applicable)
+  }
+}
+
 const typeColors = {
   normal: "#A8A878",
   fire: "#F08030",
@@ -85,7 +105,7 @@ const typeColors = {
   dragon: "#7038F8",
   dark: "#705848",
   steel: "#B8B8D0",
-  fairy: "#EE99AC", // Fixed color name for Fairy type
+  fairy: "#EE99AC",
 };
 
 function setElementStyles(elements, cssProperty, value) {
@@ -115,20 +135,32 @@ function setTypeBackgroundColor(pokemon) {
   setElementStyles([detailMainElement], "backgroundColor", color);
   setElementStyles([detailMainElement], "borderColor", color);
 
-  setElementStyles(document.querySelectorAll(".power-wrapper > p"), "backgroundColor", color);
+  setElementStyles(
+    document.querySelectorAll(".power-wrapper > p"),
+    "backgroundColor",
+    color
+  );
 
-  setElementStyles(document.querySelectorAll(".stats-wrap p.stats"), "color", color);
+  setElementStyles(
+    document.querySelectorAll(".stats-wrap p.stats"),
+    "color",
+    color
+  );
 
-  setElementStyles(document.querySelectorAll(".stats-wrap .progress-bar"), "color", color);
+  setElementStyles(
+    document.querySelectorAll(".stats-wrap .progress-bar"),
+    "color",
+    color
+  );
 
   const rgbaColor = rgbaFromHex(color);
   const styleTag = document.createElement("style");
-  styleTag.innerHTML = `
+  styleTag.innerHTML = ` 
     .stats-wrap .progress-bar::-webkit-progress-bar {
-        background-color: rgba(${rgbaColor}, 0.5);
+      background-color: rgba(${rgbaColor}, 0.5);
     }
     .stats-wrap .progress-bar::-webkit-progress-value {
-        background-color: ${color};
+      background-color: ${color};
     }
   `;
   document.head.appendChild(styleTag);
@@ -156,9 +188,12 @@ function displayPokemonDetails(pokemon) {
   const detailMainElement = document.querySelector(".detail-main");
   detailMainElement.classList.add(name.toLowerCase());
 
-  document.querySelector(".name-wrap .name").textContent = capitalizePokemonName;
+  document.querySelector(".name-wrap .name").textContent =
+    capitalizePokemonName;
 
-  document.querySelector(".pokemon-id-wrap .body2-fonts").textContent = `#${String(id).padStart(3, "0")}`;
+  document.querySelector(
+    ".pokemon-id-wrap .body2-fonts"
+  ).textContent = `#${String(id).padStart(3, "0")}`;
 
   const imageElement = document.querySelector(".detail-img-wrapper img");
   imageElement.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/${id}.svg`;
@@ -173,10 +208,16 @@ function displayPokemonDetails(pokemon) {
     });
   });
 
-  document.querySelector(".pokemon-detail-wrap .pokemon-detail p.body3-fonts.weight").textContent = `${weight / 10}kg`;
-  document.querySelector(".pokemon-detail-wrap .pokemon-detail p.body3-fonts.height").textContent = `${height / 10}m`;
+  document.querySelector(
+    ".pokemon-detail-wrap .pokemon-detail p.body3-fonts.weight"
+  ).textContent = `${weight / 10}kg`;
+  document.querySelector(
+    ".pokemon-detail-wrap .pokemon-detail p.body3-fonts.height"
+  ).textContent = `${height / 10}m`;
 
-  const abilitiesWrapper = document.querySelector(".pokemon-detail-wrap .pokemon-detail.move");
+  const abilitiesWrapper = document.querySelector(
+    ".pokemon-detail-wrap .pokemon-detail.move"
+  );
   abilities.forEach(({ ability }) => {
     createAndAppendElement(abilitiesWrapper, "p", {
       className: "body3-fonts",
