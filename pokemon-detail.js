@@ -110,7 +110,7 @@ function playBlastoiseMusic() {
   }
 
   const audio = document.createElement("audio");
-  audio.src = "./assets/Blastoise.mp3";
+  audio.src = "./assets/Blastoise.MP3";
   audio.id = "blastoise-audio";
   audio.loop = true;
   document.body.appendChild(audio);
