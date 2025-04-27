@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gula's Pokedex</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="./pokemon.js" defer></script>
+  <script src="./search.js" defer></script>
+</head>
+
+<body>
+  <audio src="./assets/big-man-blastoise-made-with-Voicemod-[AudioTrimmer.com].mp3"></audio>
+  <main class="main">
+    <header class="header home">
+      <div class="container">
+        <div class="logo-wrapper">
+          <img src="./assets/pokeball.svg" alt="pokeball" />
+          <img src="./assets/pokemon-23.svg" alt="Pokedex" />
+        </div>
+        
+        <div class="search-wrapper">
+          <div class="search-wrap">
+            <img src="./assets/search.svg" alt="search icon" class="search-icon" />
+            <input type="text" class="search-input body3-fonts" placeholder="Search" id="search-input" />
+            <img src="./assets/cross.svg" alt="cross icon" class="search-close-icon" id="search-close-icon" />
+          </div>
+          <!-- Moved the generation filter here, to the right of the search bar -->
+          <div class="gen-filter-wrapper">
+            <select id="generation-filter" class="generation-select">
+              <option value="all" selected>All Generations</option>
+              <option value="1">Generation 1</option>
+              <option value="2">Generation 2</option>
+              <option value="3">Generation 3</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </header>
+    <section class="pokemon-list">
+      <div class="container">
+        <div class="list-wrapper"></div>
+      </div>
+      <div id="not-found-message">Pokemon not found</div>
+    </section>
+  </main>
+</body>
+
+</html>
